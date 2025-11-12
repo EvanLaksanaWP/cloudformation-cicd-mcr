@@ -1,0 +1,5 @@
+{
+  "yaml.schemas": {
+    "https://raw.githubusercontent.com/awslabs/goformation/master/schema/cloudformation.schema.json": "file:///c%3A/Users/user/OneDrive%20-%20PT%20Helios%20Informatika%20Nusantara/MCR/cloudformation-cicd-mcr/template/alb.yaml"
+  }
+}

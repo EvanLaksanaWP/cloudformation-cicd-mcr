@@ -1,0 +1,18 @@
+version: 0.2
+phases:
+  install:
+    runtime-versions:
+      python: 3.11
+    commands:
+      - pip install cfn-lint
+  build:
+    commands:
+      - echo "Validating CloudFormation templates..."
+      - for t in templates/*.yml; do
+          echo "Validating $t";
+          cfn-lint "$t";
+          aws cloudformation validate-template --template-body file://"$t";
+        done
+artifacts:
+  files:
+    - '**/*'
