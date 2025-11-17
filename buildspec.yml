@@ -1,0 +1,25 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      python: 3.9
+  pre_build:
+    commands:
+      - echo Logging in to Amazon S3...
+      - aws s3 cp templates/ s3://$TEMPLATE_BUCKET/templates/ --recursive
+  build:
+    commands:
+      - echo Build started on `date`
+      - echo Deploying CloudFormation stack...
+      - |
+        aws cloudformation deploy \
+          --template-file main.yaml \
+          --stack-name web-infrastructure-$ENVIRONMENT \
+          --parameter-overrides Environment=$ENVIRONMENT \
+          --capabilities CAPABILITY_IAM \
+          --no-fail-on-empty-changeset
+  post_build:
+    commands:
+      - echo Build completed on `date`
+      - aws cloudformation describe-stacks --stack-name web-infrastructure-$ENVIRONMENT --query 'Stacks[0].Outputs'
