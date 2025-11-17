@@ -4,7 +4,7 @@ Description: 'CodePipeline for Prod Environment'
 Parameters:
   ConnectionArn:
     Type: String
-    Default: 'arn:aws:codeconnections:ap-southeast-2:279199663312:connection/4ff4ee64-7dd5-4908-91f1-43621f2198f0'
+    Default: 'arn:aws:codeconnections:ap-southeast-2:279199663312:connection/b6c8bcb4-2dff-4c8b-b1f3-a86546d72dbe'
 
 Resources:
   ArtifactBucket:
@@ -46,6 +46,24 @@ Resources:
                   - ec2:*
                   - elasticloadbalancing:*
                   - iam:PassRole
+                  - iam:CreateServiceLinkedRole
+                  - iam:CreateRole
+                  - iam:DeleteRole
+                  - iam:PutRolePolicy
+                  - iam:DeleteRolePolicy
+                  - iam:GetRole
+                  - iam:CreateInstanceProfile
+                  - iam:DeleteInstanceProfile
+                  - iam:AddRoleToInstanceProfile
+                  - iam:RemoveRoleFromInstanceProfile
+                  - iam:TagRole
+                  - iam:UntagRole
+                  - ssm:GetParameter
+                  - ssm:GetParameters
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - codeconnections:UseConnection
                 Resource: '*'
 
   CodeBuildProject:
@@ -64,6 +82,8 @@ Resources:
             Value: prod
           - Name: TEMPLATE_BUCKET
             Value: !Ref TemplateBucket
+          - Name: AWS_ACCOUNT_ID
+            Value: !Ref 'AWS::AccountId'
       Source:
         Type: CODEPIPELINE
         BuildSpec: buildspec.yml
@@ -94,7 +114,7 @@ Resources:
               - Effect: Allow
                 Action:
                   - codestar-connections:UseConnection
-                Resource: 'arn:aws:codeconnections:ap-southeast-2:279199663312:connection/4ff4ee64-7dd5-4908-91f1-43621f2198f0'
+                Resource: '*'
 
   CodePipeline:
     Type: AWS::CodePipeline::Pipeline
