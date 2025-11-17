@@ -68,6 +68,8 @@ Resources:
             Value: dev
           - Name: TEMPLATE_BUCKET
             Value: !Ref TemplateBucket
+          - Name: AWS_ACCOUNT_ID
+            Value: !Ref 'AWS::AccountId'
       Source:
         Type: CODEPIPELINE
         BuildSpec: buildspec.yml
