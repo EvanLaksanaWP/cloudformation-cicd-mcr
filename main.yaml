@@ -40,7 +40,7 @@ Resources:
       TemplateURL: !Sub 'https://web-templates-${Environment}-${AWS::AccountId}.s3.amazonaws.com/templates/ec2.yaml'
       Parameters:
         Environment: !Ref Environment
-        PrivateSubnetId: !GetAtt NetworkStack.Outputs.PrivateSubnetId
+        PublicSubnetId: !GetAtt NetworkStack.Outputs.PublicSubnetId
         EC2SecurityGroupId: !GetAtt SecurityStack.Outputs.EC2SecurityGroupId
         TargetGroupArn: !GetAtt ALBStack.Outputs.TargetGroupArn
 
