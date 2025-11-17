@@ -1,0 +1,43 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      python: 3.9
+  pre_build:
+    commands:
+      - echo Logging in to Amazon S3...
+      - aws s3 cp templates/ s3://$TEMPLATE_BUCKET/templates/ --recursive
+  build:
+    commands:
+      - echo Build started on `date`
+      - echo Checking stack status...
+      - |
+        STACK_STATUS=$(aws cloudformation describe-stacks --stack-name web-infrastructure-$ENVIRONMENT --query 'Stacks[0].StackStatus' --output text 2>/dev/null || echo "DOES_NOT_EXIST")
+        if [ "$STACK_STATUS" = "ROLLBACK_COMPLETE" ]; then
+          echo "Stack is in ROLLBACK_COMPLETE state, deleting..."
+          aws cloudformation delete-stack --stack-name web-infrastructure-$ENVIRONMENT
+          aws cloudformation wait stack-delete-complete --stack-name web-infrastructure-$ENVIRONMENT
+        fi
+      - echo Deploying CloudFormation stack...
+      - |
+        aws cloudformation deploy \
+          --template-file main.yaml \
+          --stack-name web-infrastructure-$ENVIRONMENT \
+          --parameter-overrides Environment=$ENVIRONMENT \
+          --capabilities CAPABILITY_IAM \
+          --no-fail-on-empty-changeset || \
+        (echo "Deployment failed, checking events..." && \
+         aws cloudformation describe-stack-events \
+           --stack-name web-infrastructure-$ENVIRONMENT \
+           --query 'StackEvents[?ResourceStatus==`CREATE_FAILED` || ResourceStatus==`UPDATE_FAILED`].[LogicalResourceId,ResourceStatusReason]' \
+           --output table && \
+         echo "Checking ALB stack events..." && \
+         ALB_STACK=$(aws cloudformation describe-stack-resources --stack-name web-infrastructure-$ENVIRONMENT --logical-resource-id ALBStack --query 'StackResources[0].PhysicalResourceId' --output text 2>/dev/null || echo "NOT_FOUND") && \
+         if [ "$ALB_STACK" != "NOT_FOUND" ]; then \
+           aws cloudformation describe-stack-events --stack-name $ALB_STACK --query 'StackEvents[?ResourceStatus==`CREATE_FAILED`].[LogicalResourceId,ResourceStatusReason]' --output table; \
+         fi && exit 1)
+  post_build:
+    commands:
+      - echo Build completed on `date`
+      - aws cloudformation describe-stacks --stack-name web-infrastructure-$ENVIRONMENT --query 'Stacks[0].Outputs'

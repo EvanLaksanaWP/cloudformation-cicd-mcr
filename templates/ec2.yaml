@@ -1,0 +1,115 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'EC2 Instance'
+
+Parameters:
+  Environment:
+    Type: String
+    AllowedValues: [dev, prod]
+  PublicSubnetId:
+    Type: String
+  EC2SecurityGroupId:
+    Type: String
+  TargetGroupArn:
+    Type: String
+  KeyName:
+    Type: String
+    Default: ''
+    Description: EC2 Key Pair for SSH access (optional)
+
+Conditions:
+  HasKeyName: !Not [!Equals [!Ref KeyName, '']]
+
+Resources:
+  EC2Role:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: ELBRegistration
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - elasticloadbalancing:RegisterTargets
+                  - elasticloadbalancing:DeregisterTargets
+                Resource: '*'
+
+  EC2InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - !Ref EC2Role
+
+  EC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Sub '{{resolve:ssm:/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-6.1-x86_64}}'
+      InstanceType: t3.micro
+      SubnetId: !Ref PublicSubnetId
+      KeyName: !If [HasKeyName, !Ref KeyName, !Ref 'AWS::NoValue']
+      SecurityGroupIds:
+        - !Ref EC2SecurityGroupId
+      IamInstanceProfile: !Ref EC2InstanceProfile
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          ENVIRONMENT=${Environment}
+          dnf update -y
+          dnf install -y nginx
+          systemctl enable nginx
+          systemctl start nginx
+          cat <<EOF > /usr/share/nginx/html/index.html
+          <html>
+          <head><title>${Environment} Server</title></head>
+          <body>
+          <h1>Hello from ${Environment} environment!</h1>
+          <p>This page is served by Nginx on Amazon Linux 2023</p>
+          </body>
+          </html>
+          EOF
+          
+          # Register with target group
+          echo "Starting target group registration..."
+          echo "Testing metadata service..."
+          curl -v http://169.254.169.254/latest/meta-data/instance-id
+          echo "Getting instance ID..."
+          INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
+          echo "Instance ID from curl: '$INSTANCE_ID'"
+          
+          # Alternative method using token-based metadata
+          if [ -z "$INSTANCE_ID" ]; then
+            echo "Curl failed, trying with token..."
+            TOKEN=$(curl -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600")
+            INSTANCE_ID=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/instance-id)
+            echo "Instance ID with token: '$INSTANCE_ID'"
+          fi
+          
+          echo "Target Group ARN: ${TargetGroupArn}"
+          
+          # Wait for AWS CLI to be ready and retry registration
+          for i in {1..5}; do
+            echo "Registration attempt $i..."
+            if aws elbv2 register-targets --target-group-arn ${TargetGroupArn} --targets Id=$INSTANCE_ID,Port=80 --region us-east-1; then
+              echo "Successfully registered with target group"
+              break
+            else
+              echo "Registration attempt $i failed, retrying in 30 seconds..."
+              sleep 30
+            fi
+          done
+      Tags:
+        - Key: Name
+          Value: !Sub 'web-ec2-${Environment}'
+
+
+
+Outputs:
+  EC2InstanceId:
+    Value: !Ref EC2Instance
