@@ -97,7 +97,7 @@ Resources:
                 Resource: '*'
               - Effect: Allow
                 Action:
-                  - codeconnections:*
+                  - codestar-connections:UseConnection
                 Resource: '*'
 
   CodePipeline:
