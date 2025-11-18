@@ -43,6 +43,7 @@ Resources:
                   - s3:GetObject
                   - s3:PutObject
                   - s3:ListBucket
+                  - s3:PutBucketTagging
                   - cloudformation:*
                   - ec2:*
                   - elasticloadbalancing:*
