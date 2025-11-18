@@ -14,9 +14,9 @@ phases:
     commands:
       - echo Running CloudFormation linting...
       - echo "Linting main.yaml..."
-      - cfn-lint --info --ignore-checks W main.yaml || (echo "Main template linting failed" && exit 1)
+      - cfn-lint --info --ignore-checks W main.yaml
       - echo "Linting templates..."
-      - cfn-lint --info --ignore-checks W templates/*.yaml || (echo "Template linting failed" && exit 1)
+      - cfn-lint --info --ignore-checks W templates/*.yaml
       - echo Linting passed, running TaskCat tests...
       - taskcat test run --no-delete || (echo "TaskCat tests failed" && exit 1)
   post_build:
