@@ -5,7 +5,7 @@ phases:
     runtime-versions:
       python: 3.9
     commands:
-      - pip install taskcat cfn-lint==1.35.1
+      - pip install taskcat cfn-lint
   pre_build:
     commands:
       - echo Starting linting and testing...
@@ -16,11 +16,11 @@ phases:
       - echo "Linting main.yaml..."
       - pwd
       - ls -la
-      - cfn-lint --info --ignore-checks W main.yaml
+      - cfn-lint -I  main.yaml
       - echo "Linting templates..."
-      - cfn-lint --info --ignore-checks W templates/*.yaml
+      - cfn-lint -I templates/*.yaml
       - echo Linting passed, running TaskCat tests...
-      - taskcat test run --no-delete || (echo "TaskCat tests failed" && exit 1)
+      - taskcat test run || (echo "TaskCat tests failed" && exit 1)
   post_build:
     commands:
       - echo All tests completed successfully
