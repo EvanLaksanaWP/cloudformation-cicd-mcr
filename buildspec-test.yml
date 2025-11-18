@@ -1,0 +1,26 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      python: 3.9
+    commands:
+      - pip install taskcat cfn-lint
+  pre_build:
+    commands:
+      - echo Starting linting and testing...
+      - aws s3 cp templates/ s3://$TEMPLATE_BUCKET/templates/ --recursive
+  build:
+    commands:
+      - echo Running CloudFormation linting...
+      - cfn-lint main.yaml
+      - cfn-lint templates/*.yaml
+      - echo Linting passed, running TaskCat tests...
+      - taskcat test run --no-delete
+  post_build:
+    commands:
+      - echo All tests completed successfully
+      - ls -la taskcat_outputs/
+artifacts:
+  files:
+    - 'taskcat_outputs/**/*'

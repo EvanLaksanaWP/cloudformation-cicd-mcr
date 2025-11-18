@@ -1,0 +1,13 @@
+project:
+  name: web-infrastructure
+  regions:
+    - us-east-1
+  parameters:
+    Environment: dev
+tests:
+  template-validation:
+    template: main.yaml
+    parameters:
+      Environment: dev
+    regions:
+      - us-east-1
