@@ -1,7 +1,7 @@
 project:
   name: web-infrastructure
   regions:
-    - us-east-1
+    - us-west-2
   parameters:
     Environment: dev
 tests:
@@ -10,4 +10,4 @@ tests:
     parameters:
       Environment: dev
     regions:
-      - us-east-1
+      - us-west-2
