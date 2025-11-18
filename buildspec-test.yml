@@ -14,6 +14,8 @@ phases:
     commands:
       - echo Running CloudFormation linting...
       - echo "Linting main.yaml..."
+      - pwd
+      - ls -la
       - cfn-lint --info --ignore-checks W main.yaml
       - echo "Linting templates..."
       - cfn-lint --info --ignore-checks W templates/*.yaml
