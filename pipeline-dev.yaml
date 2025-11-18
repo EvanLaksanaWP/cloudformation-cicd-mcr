@@ -39,6 +39,7 @@ Resources:
                   - logs:CreateLogGroup
                   - logs:CreateLogStream
                   - logs:PutLogEvents
+                  - s3:CreateBucket
                   - s3:GetObject
                   - s3:PutObject
                   - s3:ListBucket
